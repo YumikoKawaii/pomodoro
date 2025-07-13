@@ -1,0 +1,21 @@
+version: "3.5"
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: app_planner
+    restart: on-failure
+    environment:
+      MYSQL_USER: app_planner
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: app_planner
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - 3306:3306
+    volumes:
+      - ../planner-volumes/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
