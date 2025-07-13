@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import items, users
+from app.routers import items, users, tasks
 from app.core.config import settings
 
 # Create FastAPI instance
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="A simple FastAPI backend project"
+    description="A simple FastAPI backend project with task management"
 )
 
 # Add CORS middleware
@@ -22,6 +22,7 @@ app.add_middleware(
 # Include routers
 app.include_router(items.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
 
 # Root endpoint
 @app.get("/")
