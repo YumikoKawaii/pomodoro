@@ -1,65 +1,74 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, Enum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-import enum
-from app.core.database import Base
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+from enum import Enum
 
 
-class TaskPriority(enum.Enum):
+class TaskPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
 
 
-class TaskStatus(enum.Enum):
+class TaskStatus(str, Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
 
-class Item(Base):
-    __tablename__ = "items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    price = Column(Float, nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
+class TaskBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: TaskPriority = TaskPriority.MEDIUM
+    status: TaskStatus = TaskStatus.PENDING
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    category: Optional[str] = Field(None, max_length=50)
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    full_name = Column(String(100), nullable=True)
-    hashed_password = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, server_default=func.now())
-
-    # Relationship to tasks
-    tasks = relationship("Task", back_populates="user")
+class TaskCreate(TaskBase):
+    user_id: int = Field(..., gt=0)
 
 
-class Task(Base):
-    __tablename__ = "tasks"
+class TaskUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: Optional[TaskPriority] = None
+    status: Optional[TaskStatus] = None
+    user_id: Optional[int] = Field(None, gt=0)
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    category: Optional[str] = Field(None, max_length=50)
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    priority = Column(Enum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False)
-    status = Column(Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    start_time = Column(DateTime, nullable=True)
-    end_time = Column(DateTime, nullable=True)
-    category = Column(String(50), nullable=True, index=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
 
-    # Relationship to user
-    user = relationship("User", back_populates="tasks")
+class Task(TaskBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TaskResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    priority: TaskPriority
+    status: TaskStatus
+    user_id: int
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    category: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    # Include user information
+    user_email: Optional[str] = None
+    user_username: Optional[str] = None
+
+    class Config:
+        from_attributes = True
